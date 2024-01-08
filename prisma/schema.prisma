@@ -10,23 +10,11 @@ generator client {
   previewFeatures = ["postgresqlExtensions"]
 }
 
-model Pokemon {
-  id         String  @id @default(cuid())
-  number     Int
-  name       String
-  type1      String
-  type2      String?
-  total      Int
-  hp         Int
-  attack     Int
-  defense    Int
-  spAtk      Int
-  spDef      Int
-  speed      Int
-  generation Int
-  legendary  Boolean
+model NL2SQL {
+  id     String @id @default(cuid())
+  question  String
 
   embedding Unsupported("vector(1536)")?
 
-  @@map("pokemon")
+  @@map("nl2sql")
 }

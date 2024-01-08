@@ -7,27 +7,27 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/command'
-import { type Pokemon } from '@prisma/client'
+import { type NL2SQL } from '@prisma/client'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useDebounce } from 'use-debounce'
 
 export interface SearchProps {
-  searchPokedex: (
+  searchNL2SQL: (
     content: string
-  ) => Promise<Array<Pokemon & { similarity: number }>>
+  ) => Promise<Array<NL2SQL & { similarity?: number }>>
 }
 
-export function Search({ searchPokedex }: SearchProps) {
+export function SearchNL2SQL({ searchNL2SQL }: SearchProps) {
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState<
-    Array<Pokemon & { similarity?: number }>
+    Array<NL2SQL & { similarity?: number }>
   >([])
   const [debouncedQuery] = useDebounce(query, 500)
   useEffect(() => {
     let current = true
     if (debouncedQuery.trim().length > 0) {
-      searchPokedex(debouncedQuery).then((results) => {
+      searchNL2SQL(debouncedQuery).then((results) => {
         if (current) {
           setSearchResults(results)
         }
@@ -36,23 +36,23 @@ export function Search({ searchPokedex }: SearchProps) {
     return () => {
       current = false
     }
-  }, [debouncedQuery, searchPokedex])
+  }, [debouncedQuery, searchNL2SQL])
   return (
     <div className="w-full">
       <Command label="Command Menu" shouldFilter={false} className="h-[200px]">
         <CommandInput
           id="search"
-          placeholder="Search for Pokémon"
+          placeholder="Type a question here . . ."
           className="focus:ring-0 sm:text-sm text-base focus:border-0 border-0 active:ring-0 active:border-0 ring-0 outline-0"
           value={query}
           onValueChange={(q) => setQuery(q)}
         />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
-          {searchResults.map((pokemon) => (
+          {searchResults.map((question) => (
             <CommandItem
-              key={pokemon.id}
-              value={pokemon.name}
+              key={question.id}
+              value={question.question}
               className="data-[selected='true']:bg-zinc-50  flex items-center justify-between py-3"
               onSelect={(p) => {
                 console.log(p)
@@ -62,14 +62,14 @@ export function Search({ searchPokedex }: SearchProps) {
               <div className="flex items-center space-x-4">
                 <div className="space-y-1">
                   <p className="text-sm text-gray-500">
-                    {pokemon.name.substring(0, 90)}
+                    {question.question.substring(0, 90)}
                   </p>
                 </div>
               </div>
               <div className="text-sm text-gray-500">
-                {pokemon.similarity ? (
+                {question.similarity ? (
                   <div className="text-xs font-mono p-0.5 rounded bg-zinc-100">
-                    {pokemon.similarity.toFixed(3)}
+                    {question.similarity.toFixed(3)}
                   </div>
                 ) : (
                   <div />
@@ -83,4 +83,4 @@ export function Search({ searchPokedex }: SearchProps) {
   )
 }
 
-Search.displayName = 'Search'
+SearchNL2SQL.displayName = 'Search'

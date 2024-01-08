@@ -2,32 +2,81 @@
 
 import prisma from '@/lib/prisma'
 import { openai } from '@/lib/openai'
-import { type Pokemon } from '@prisma/client'
+import { type NL2SQL } from '@prisma/client'
 import { ratelimit } from '@/lib/utils'
 
-export async function searchPokedex(
-  query: string
-): Promise<Array<Pokemon & { similarity: number }>> {
+export async function searchNL2SQL(query: string): Promise<Array<NL2SQL & {similarity: number}>>{
   try {
     if (query.trim().length === 0) return []
 
-    const { success } = await ratelimit.limit('generations')
+    const {success} = await ratelimit.limit('generations')
     if (!success) throw new Error('Rate limit exceeded')
 
     const embedding = await generateEmbedding(query)
     const vectorQuery = `[${embedding.join(',')}]`
-    const pokemon = await prisma.$queryRaw`
+    const nl2sql = await prisma.$queryRaw`
       SELECT
         id,
-        "name",
+        "question",
         1 - (embedding <=> ${vectorQuery}::vector) as similarity
-      FROM pokemon
+      FROM nl2sql
       where 1 - (embedding <=> ${vectorQuery}::vector) > .5
       ORDER BY  similarity DESC
       LIMIT 8;
     `
+    return nl2sql as Array<NL2SQL & {similarity: number}>
+  } catch (error) {
+    console.error(error)
+    throw error
+  }
+}
 
-    return pokemon as Array<Pokemon & { similarity: number }>
+export async function searchNL2SQLNoEmbed(query: string): Promise<Array<NL2SQL & {similarity: number}>>{
+  try {
+    if (query.trim().length === 0) return []
+
+    const {success} = await ratelimit.limit('generations')
+    if (!success) throw new Error('Rate limit exceeded')
+
+    const nl2sql = await prisma.$queryRaw`
+      SELECT
+          id,
+          question,
+          similarity(question,${query}) AS similarity
+      FROM nl2sql
+      WHERE question % ${query}
+      ORDER BY similarity DESC
+      LIMIT 8;
+    `
+    return nl2sql as Array<NL2SQL & {similarity: number}>
+  } catch (error) {
+    console.error(error)
+    throw error
+  }
+}
+
+export async function searchAutoNormal(query: string): Promise<Array<NL2SQL>>{
+  try {
+    if (query.trim().length === 0) return []
+
+    const {success} = await ratelimit.limit('generations')
+    if (!success) throw new Error('Rate limit exceeded')
+
+    const result = await prisma.nL2SQL.findMany({
+      select:{
+        id: true,
+        question: true
+      },
+      where:{
+        question: {
+          contains: query,
+          mode: 'insensitive'
+        }
+      },
+      take: 8
+    })
+
+    return result as Array<NL2SQL>
   } catch (error) {
     console.error(error)
     throw error
